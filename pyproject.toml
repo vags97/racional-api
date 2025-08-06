@@ -1,0 +1,30 @@
+[project]
+name = "racional-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bcrypt==4.0.1",
+    "fastapi[standard]>=0.116.1",
+    "passlib[bcrypt]>=1.7.4",
+    "python-decouple>=3.8",
+    "sqlalchemy>=2.0.42",
+]
+
+[tool.taskipy.tasks]
+dev = "fastapi dev main.py"
+lint = "ruff check . && black --check . && mypy ."
+format = "ruff check . --fix && black ."
+typecheck = "mypy ."
+security = "bandit -r . -c .bandit.yml"  # Standalone security scan
+security-deps = "uv-secure"
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.6",
+    "black>=25.1.0",
+    "mypy>=1.17.1",
+    "ruff>=0.12.7",
+    "taskipy>=1.14.1",
+]
