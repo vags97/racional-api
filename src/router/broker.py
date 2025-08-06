@@ -8,7 +8,7 @@ from src.models import User, Broker
 
 broker_router = APIRouter(prefix="/v1/broker", tags=["Broker"])
 
-@broker_router.get("/get")
+@broker_router.get("")
 def get_brokers(
     request: Request,
     db: Session = Depends(get_db)

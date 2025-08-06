@@ -3,13 +3,13 @@ from src.database import get_db
 from .auth import validate_auth_token
 from sqlalchemy.orm import Session
 from src.config import COOKIE_NAME
-from src.models import User, Stock, Portfolio, BuyOrder, SellOrder
+from src.models import User, Stock, Portfolio, BuyOrder, SellOrder, PortfolioStock
 from pydantic import BaseModel
 from datetime import datetime
 
 stock_router = APIRouter(prefix="/v1/stock", tags=["Stocks"])
 
-@stock_router.get("/get")
+@stock_router.get("")
 def get_stocks(
     request: Request,
     db: Session = Depends(get_db)
@@ -65,7 +65,6 @@ def register_buy_order(
         )
     
     # Get user and validate portfolio ownership
-    db.begin()
     user = db.query(User).get(user_id)
     if not user:
         raise HTTPException(
@@ -150,7 +149,7 @@ def register_sell_order(
             detail="No autenticado"
         )
     
-    # Get user and validate portfolio ownership
+    # Get user
     user = db.query(User).get(user_id)
     if not user:
         raise HTTPException(
@@ -158,6 +157,7 @@ def register_sell_order(
             detail="Usuario no encontrado"
         )
     
+    # Validate portfolio ownership
     portfolio = db.query(Portfolio).filter(
         Portfolio.id == order_data.portfolio_id,
         Portfolio.user_id == user_id
@@ -169,7 +169,7 @@ def register_sell_order(
             detail="Portfolio no encontrado o no pertenece al usuario"
         )
     
-    # Get stock and calculate total amount
+    # Get stock
     stock = db.query(Stock).get(order_data.stock_id)
     if not stock:
         raise HTTPException(
@@ -177,10 +177,22 @@ def register_sell_order(
             detail="Acción no encontrada"
         )
     
+    # Check stock quantity in portfolio
+    portfolio_stock = db.query(PortfolioStock).filter(
+        PortfolioStock.portfolio_id == order_data.portfolio_id,
+        PortfolioStock.stock_id == order_data.stock_id
+    ).first()
+    
+    if not portfolio_stock or portfolio_stock.quantity < order_data.stock_quantity:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No tienes suficientes acciones en tu portafolio para esta venta"
+        )
+    
     total_amount = stock.unit_value * order_data.stock_quantity
     
     try:
-        # Add to user balance
+        # Update user balance
         user.balance += total_amount
         
         # Create sell order
@@ -193,15 +205,22 @@ def register_sell_order(
             state="completed",
             timestamp=datetime.utcnow()
         )
-        
         db.add(sell_order)
+        
+        # Update portfolio stock quantity
+        portfolio_stock.quantity -= order_data.stock_quantity
+        
+        # If quantity reaches zero, remove the stock from portfolio
+        if portfolio_stock.quantity <= 0:
+            db.delete(portfolio_stock)
         
         db.commit()
         
         return {
             "message": "Orden de venta registrada exitosamente",
             "new_balance": user.balance,
-            "order_id": sell_order.id
+            "order_id": sell_order.id,
+            "remaining_stocks": portfolio_stock.quantity if portfolio_stock.quantity > 0 else 0
         }
         
     except Exception as e:

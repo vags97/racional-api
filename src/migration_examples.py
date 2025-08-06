@@ -1,6 +1,6 @@
 from src.database import SessionLocal
-from src.config import  pwd_context
-from src.models import User, Broker, Portfolio, Stock
+from src.config import pwd_context
+from src.models import User, Broker, Portfolio, Stock, PortfolioStock
 
 def create_examples():
     db = SessionLocal()
@@ -35,37 +35,89 @@ def create_examples():
         print("✅ Created brokers")
 
         # Create example portfolios for the user
-        portfolios = [
-            Portfolio(user_id=user_data.id, portfolio="Retirement Account"),
-            Portfolio(user_id=user_data.id, portfolio="Trading Account"),
-            Portfolio(user_id=user_data.id, portfolio="Long-Term Holdings")
-        ]
-        for portfolio in portfolios:
-            if not db.query(Portfolio).filter(
-                (Portfolio.user_id == portfolio.user_id) & 
-                (Portfolio.portfolio == portfolio.portfolio)
-            ).first():
+        portfolio_names = ["Retirement Account", "Trading Account", "Long-Term Holdings"]
+        created_portfolios = []
+        
+        for name in portfolio_names:
+            portfolio = db.query(Portfolio).filter(
+                (Portfolio.user_id == user_data.id) & 
+                (Portfolio.portfolio == name)
+            ).first()
+            
+            if not portfolio:
+                portfolio = Portfolio(user_id=user_data.id, portfolio=name)
                 db.add(portfolio)
-        db.commit()
-        print("✅ Created portfolios")
-
+                db.commit()
+                db.refresh(portfolio)
+                print(f"✅ Created portfolio: {name}")
+            else:
+                print(f"⏩ Using existing portfolio: {name}")
+            
+            created_portfolios.append(portfolio)
+        
         # Create example stocks
-        stocks = [
-            Stock(stock="AAPL", quantity=100, unit_value=175.50),
-            Stock(stock="MSFT", quantity=50, unit_value=325.25),
-            Stock(stock="TSLA", quantity=30, unit_value=250.75),
-            Stock(stock="AMZN", quantity=20, unit_value=150.30),
-            Stock(stock="GOOGL", quantity=15, unit_value=135.40)
+        stocks_data = [
+            {"stock": "AAPL", "quantity": 100, "unit_value": 175.50},
+            {"stock": "MSFT", "quantity": 50, "unit_value": 325.25},
+            {"stock": "TSLA", "quantity": 30, "unit_value": 250.75},
+            {"stock": "AMZN", "quantity": 20, "unit_value": 150.30},
+            {"stock": "GOOGL", "quantity": 15, "unit_value": 135.40}
         ]
-        for stock in stocks:
-            if not db.query(Stock).filter(Stock.stock == stock.stock).first():
+        
+        created_stocks = []
+        for data in stocks_data:
+            stock = db.query(Stock).filter(Stock.stock == data["stock"]).first()
+            
+            if not stock:
+                stock = Stock(
+                    stock=data["stock"],
+                    quantity=data["quantity"],
+                    unit_value=data["unit_value"]
+                )
                 db.add(stock)
-        db.commit()
-        print("✅ Created stocks")
-
+                db.commit()
+                db.refresh(stock)
+                print(f"✅ Created stock: {data['stock']}")
+            else:
+                print(f"⏩ Using existing stock: {data['stock']}")
+            
+            created_stocks.append(stock)
+        
+        # Add stocks to first portfolio (Retirement Account)
+        if created_portfolios and created_stocks:
+            first_portfolio = created_portfolios[0]
+            
+            # Add AAPL and MSFT to the portfolio with different quantities
+            stocks_to_add = [
+                {"stock": created_stocks[0], "quantity": 10, "average_price": 170.00},  # AAPL
+                {"stock": created_stocks[1], "quantity": 5, "average_price": 320.00},   # MSFT
+                {"stock": created_stocks[2], "quantity": 3, "average_price": 245.50}    # TSLA
+            ]
+            
+            for item in stocks_to_add:
+                # Check if stock already exists in portfolio
+                existing = db.query(PortfolioStock).filter(
+                    (PortfolioStock.portfolio_id == first_portfolio.id) &
+                    (PortfolioStock.stock_id == item["stock"].id)
+                ).first()
+                
+                if not existing:
+                    portfolio_stock = PortfolioStock(
+                        portfolio_id=first_portfolio.id,
+                        stock_id=item["stock"].id,
+                        quantity=item["quantity"]
+                    )
+                    db.add(portfolio_stock)
+                    print(f"✅ Added {item['stock'].stock} to {first_portfolio.portfolio}")
+                else:
+                    print(f"⏩ {item['stock'].stock} already in {first_portfolio.portfolio}")
+            
+            db.commit()
+        
         print("🎉 Example data creation complete!")
     except Exception as e:
         db.rollback()
         print(f"❌ Error creating examples: {str(e)}")
+        raise
     finally:
         db.close()
