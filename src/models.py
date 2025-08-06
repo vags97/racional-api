@@ -20,7 +20,6 @@ class Stock(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     stock = Column(String, nullable=False)
     quantity = Column(Integer)
-    hashed_password = Column(String)
     unit_value = Column(Float)
     
     portfolio_stocks = relationship("PortfolioStock", back_populates="stock")
@@ -38,11 +37,11 @@ class Transaction(Base):
     user = relationship("User", back_populates="transactions")
 
 class Portfolio(Base):
-    __tablename__ = 'portafolio'
+    __tablename__ = 'portfolio'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
-    portafolio = Column(String)
+    portfolio = Column(String)
     
     user = relationship("User", back_populates="portfolios")
     portfolio_stocks = relationship("PortfolioStock", back_populates="portfolio")
@@ -50,10 +49,10 @@ class Portfolio(Base):
     sell_orders = relationship("SellOrder", back_populates="portfolio")
 
 class PortfolioStock(Base):
-    __tablename__ = 'portafolio_stock'
+    __tablename__ = 'portfolio_stock'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    portafolio_id = Column(Integer, ForeignKey('portafolio.id'), nullable=False)
+    portfolio_id = Column(Integer, ForeignKey('portfolio.id'), nullable=False)
     stock_id = Column(Integer, ForeignKey('stock.id'), nullable=False)
     quantity = Column(Integer)
     
@@ -73,8 +72,8 @@ class BuyOrder(Base):
     __tablename__ = 'buy_order'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    portafolio_id = Column(Integer, ForeignKey('portafolio.id'), nullable=False)
-    broker_id = Column(Integer, ForeignKey('broker.id'), nullable=False)
+    portfolio_id = Column(Integer, ForeignKey('portfolio.id'), nullable=False)
+    broker_id = Column(Integer, ForeignKey('broker.id'), nullable=True)
     stock_id = Column(Integer, ForeignKey('stock.id'), nullable=False)
     amount = Column(Float, nullable=False)
     stock_quantity = Column(Integer, nullable=False)
@@ -89,8 +88,8 @@ class SellOrder(Base):
     __tablename__ = 'sell_order'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    portafolio_id = Column(Integer, ForeignKey('portafolio.id'), nullable=False)
-    broker_id = Column(Integer, ForeignKey('broker.id'), nullable=False)
+    portfolio_id = Column(Integer, ForeignKey('portfolio.id'), nullable=False)
+    broker_id = Column(Integer, ForeignKey('broker.id'), nullable=True)
     stock_id = Column(Integer, ForeignKey('stock.id'), nullable=False)
     amount = Column(Float, nullable=False)
     stock_quantity = Column(Integer, nullable=False)

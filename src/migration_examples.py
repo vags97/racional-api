@@ -36,14 +36,14 @@ def create_examples():
 
         # Create example portfolios for the user
         portfolios = [
-            Portfolio(user_id=user_data.id, portafolio="Retirement Account"),
-            Portfolio(user_id=user_data.id, portafolio="Trading Account"),
-            Portfolio(user_id=user_data.id, portafolio="Long-Term Holdings")
+            Portfolio(user_id=user_data.id, portfolio="Retirement Account"),
+            Portfolio(user_id=user_data.id, portfolio="Trading Account"),
+            Portfolio(user_id=user_data.id, portfolio="Long-Term Holdings")
         ]
         for portfolio in portfolios:
             if not db.query(Portfolio).filter(
                 (Portfolio.user_id == portfolio.user_id) & 
-                (Portfolio.portafolio == portfolio.portafolio)
+                (Portfolio.portfolio == portfolio.portfolio)
             ).first():
                 db.add(portfolio)
         db.commit()
