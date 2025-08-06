@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 from datetime import datetime, timedelta
 from src.models import User
@@ -12,8 +12,8 @@ import hashlib
 auth_router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 class LoginData(BaseModel):
-    username: str
-    password: str
+    username: str = 'john_doe'
+    password: str = '123456'
 
 def verify_user(db: Session, username: str, password: str):
     user = db.query(User).filter(User.username == username).first()

@@ -65,6 +65,7 @@ def register_buy_order(
         )
     
     # Get user and validate portfolio ownership
+    db.begin()
     user = db.query(User).get(user_id)
     if not user:
         raise HTTPException(

@@ -37,6 +37,7 @@ def add_funds(
         )
     
     # Get user
+    db.begin()
     user = db.query(User).get(user_id)
     if not user:
         raise HTTPException(
@@ -99,6 +100,7 @@ def retire_funds(
         )
     
     # Get user
+    db.begin()
     user = db.query(User).get(user_id)
     if not user:
         raise HTTPException(
