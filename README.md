@@ -46,3 +46,4 @@ Would you like any refinements or additional details?
 - Improve documentation descriptions.  
 - Better implement linters, formatters, and security checks using the libraries installed in pyproject.toml (Bandit, Mypy, Ruff, uv-secure).  
 - Separate routes from logic to keep files cleaner.
+- Review float calculations to be accurate
